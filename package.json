@@ -21,10 +21,10 @@
     "url": "git+https://github.com/neustar/node-mbed-dtls.git"
   },
   "devDependencies": {
-    "mocha": "^2.3.3",
-    "node-gyp": "^3.0.3",
-    "should": "^7.1.0",
-    "sinon": "^1.17.1"
+    "mocha": "^10.3.0",
+    "node-gyp": "^10.0.1",
+    "should": "^13.2.3",
+    "sinon": "^17.0.1"
   },
   "engines": {
     "node": ">=5.0.0"

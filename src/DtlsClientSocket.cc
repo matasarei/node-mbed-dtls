@@ -57,18 +57,21 @@ void DtlsClientSocket::Initialize(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE target)
   Nan::SetPrototypeMethod(ctor, "send", Send);
   Nan::SetPrototypeMethod(ctor, "connect", Connect);
 
-  Nan::Set(target, Nan::New("DtlsClientSocket").ToLocalChecked(), ctor->GetFunction());
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  Nan::Set(target, Nan::New("DtlsClientSocket").ToLocalChecked(), ctor->GetFunction(context).ToLocalChecked());
 }
 
 /*
  * Node wrapper to the client socket constructor.
  */
 void DtlsClientSocket::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  size_t priv_key_len     = (info[0]->BooleanValue()) ? Buffer::Length(info[0]) : 0;
-  size_t peer_pub_key_len = (info[1]->BooleanValue()) ? Buffer::Length(info[1]) : 0;
-  size_t ca_len           = (info[2]->BooleanValue()) ? Buffer::Length(info[2]) : 0;
-  size_t psk_len          = (info[3]->BooleanValue()) ? Buffer::Length(info[3]) : 0;
-  size_t ident_len        = (info[4]->BooleanValue()) ? Buffer::Length(info[4]) : 0;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+
+  size_t priv_key_len     = (info[0]->BooleanValue(isolate)) ? Buffer::Length(info[0]) : 0;
+  size_t peer_pub_key_len = (info[1]->BooleanValue(isolate)) ? Buffer::Length(info[1]) : 0;
+  size_t ca_len           = (info[2]->BooleanValue(isolate)) ? Buffer::Length(info[2]) : 0;
+  size_t psk_len          = (info[3]->BooleanValue(isolate)) ? Buffer::Length(info[3]) : 0;
+  size_t ident_len        = (info[4]->BooleanValue(isolate)) ? Buffer::Length(info[4]) : 0;
 
   const unsigned char* priv_key     = (priv_key_len)     ? (const unsigned char *) Buffer::Data(info[0]) : NULL;
   const unsigned char* peer_pub_key = (peer_pub_key_len) ? (const unsigned char *) Buffer::Data(info[1]) : NULL;
@@ -82,7 +85,8 @@ void DtlsClientSocket::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
   int debug_level = 0;
   if (info.Length() > 8) {
-    debug_level = info[8]->Uint32Value();
+    v8::Local<v8::Context> context = Nan::GetCurrentContext();
+    debug_level = info[8]->Uint32Value(context).ToChecked();
   }
 
   DtlsClientSocket *socket = new DtlsClientSocket(
@@ -246,7 +250,8 @@ int DtlsClientSocket::send_encrypted(const unsigned char *buf, size_t len) {
     Nan::CopyBuffer((char *)buf, len).ToLocalChecked()
   };
   v8::Local<v8::Function> sendCallbackDirect = send_cb->GetFunction();
-  sendCallbackDirect->Call(Nan::GetCurrentContext()->Global(), 1, argv);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  sendCallbackDirect->Call(context, context->Global(), 1, argv);
   return len;
 }
 
@@ -345,7 +350,8 @@ int DtlsClientSocket::step() {
   if (ssl_context.state == MBEDTLS_SSL_HANDSHAKE_OVER) {
     // this should only be called once when we first finish the handshake
     v8::Local<v8::Function> handshakeCallbackDirect = handshake_cb->GetFunction();
-    handshakeCallbackDirect->Call(Nan::GetCurrentContext()->Global(), 0, NULL);
+    v8::Local<v8::Context> context = Nan::GetCurrentContext();
+    handshakeCallbackDirect->Call(context, context->Global(), 0, NULL);
   }
   return 0;
 }
@@ -366,7 +372,8 @@ void DtlsClientSocket::error(int ret) {
     Nan::New(error_buf).ToLocalChecked()
   };
   v8::Local<v8::Function> errorCallbackDirect = error_cb->GetFunction();
-  errorCallbackDirect->Call(Nan::GetCurrentContext()->Global(), 2, argv);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  errorCallbackDirect->Call(context, context->Global(), 2, argv);
 }
 
 void DtlsClientSocket::store_data(const unsigned char *buf, size_t len) {

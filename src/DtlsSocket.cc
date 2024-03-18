@@ -33,7 +33,7 @@ DtlsSocket::Initialize(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE target) {
   Nan::SetAccessor(ctorInst, Nan::New("outCounter").ToLocalChecked(), GetOutCounter);
   Nan::SetAccessor(ctorInst, Nan::New("session").ToLocalChecked(), GetSession);
 
-  Nan::Set(target, Nan::New("DtlsSocket").ToLocalChecked(), ctor->GetFunction());
+  Nan::Set(target, Nan::New("DtlsSocket").ToLocalChecked(), ctor->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
 }
 
 void DtlsSocket::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -298,7 +298,8 @@ int DtlsSocket::send_encrypted(const unsigned char *buf, size_t len) {
     Nan::CopyBuffer((char *)buf, len).ToLocalChecked()
   };
   v8::Local<v8::Function> sendCallbackDirect = send_cb->GetFunction();
-  sendCallbackDirect->Call(Nan::GetCurrentContext()->Global(), 1, argv);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  sendCallbackDirect->Call(context, context->Global(), 1, argv);
   return len;
 }
 
@@ -352,7 +353,8 @@ void DtlsSocket::get_session_cache(mbedtls_ssl_session *session) {
   v8::Local<v8::Value> argv[argc] = { session_id };
 
   v8::Local<v8::Function> resumeCallbackDirect = resume_sess_cb->GetFunction();
-  resumeCallbackDirect->Call(Nan::GetCurrentContext()->Global(), argc, argv);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  resumeCallbackDirect->Call(context, context->Global(), argc, argv);
 }
 
 void DtlsSocket::renegotiate(SessionWrap *sess) {
@@ -436,7 +438,8 @@ int DtlsSocket::step() {
 
   // this should only be called once when we first finish the handshake
   v8::Local<v8::Function> hsCallbackDirect = handshake_cb->GetFunction();
-  hsCallbackDirect->Call(Nan::GetCurrentContext()->Global(), 0, NULL);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  hsCallbackDirect->Call(context, context->Global(), 0, NULL);
   return 0;
 }
 
@@ -455,7 +458,8 @@ void DtlsSocket::error(int ret) {
   };
 
   v8::Local<v8::Function> errorCallbackDirect = error_cb->GetFunction();
-  errorCallbackDirect->Call(Nan::GetCurrentContext()->Global(), 2, argv);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  errorCallbackDirect->Call(context, context->Global(), 2, argv);
 }
 
 void DtlsSocket::store_data(const unsigned char *buf, size_t len) {

@@ -65,7 +65,8 @@ void DtlsServer::Initialize(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE target) {
 
   Nan::SetAccessor(ctorInst, Nan::New("handshakeTimeoutMin").ToLocalChecked(), 0, SetHandshakeTimeoutMin);
 
-  Nan::Set(target, Nan::New("DtlsServer").ToLocalChecked(), ctor->GetFunction());
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  Nan::Set(target, Nan::New("DtlsServer").ToLocalChecked(), ctor->GetFunction(context).ToLocalChecked());
 }
 
 void DtlsServer::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -78,7 +79,7 @@ void DtlsServer::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 
   if (info[1]->IsFunction() == false) {
-   return Nan::ThrowTypeError("Expecting param 2 to be a function"); 
+   return Nan::ThrowTypeError("Expecting param 2 to be a function");
   }
 
   size_t key_len = Buffer::Length(info[0]);
@@ -89,7 +90,8 @@ void DtlsServer::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
   int debug_level = 0;
   if (info.Length() > 1) {
-    debug_level = info[2]->Uint32Value();
+    v8::Local<v8::Context> context = Nan::GetCurrentContext();
+    debug_level = info[2]->Uint32Value(context).ToChecked();
   }
 
   DtlsServer *server = new DtlsServer(key, key_len,get_psk, debug_level);
@@ -174,7 +176,8 @@ exit:
 
 NAN_SETTER(DtlsServer::SetHandshakeTimeoutMin) {
   DtlsServer *server = Nan::ObjectWrap::Unwrap<DtlsServer>(info.This());
-  mbedtls_ssl_conf_handshake_timeout(server->config(), value->Uint32Value(), server->config()->hs_timeout_max);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  mbedtls_ssl_conf_handshake_timeout(server->config(), value->Uint32Value(context).ToChecked(), server->config()->hs_timeout_max);
 }
 
 char *DtlsServer::getPskFromIdentity(char *identity) {
@@ -184,9 +187,10 @@ char *DtlsServer::getPskFromIdentity(char *identity) {
     Nan::New(identity).ToLocalChecked()
   };
   v8::Local<v8::Function> getPskCallback = get_psk->GetFunction();
-  v8::Local<v8::Value> jsPsk = getPskCallback->Call(Nan::GetCurrentContext()->Global(), 1, argv);
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  v8::Local<v8::Value> jsPsk = getPskCallback->Call(context, context->Global(), 1, argv).ToLocalChecked();
 
-  Nan::Utf8String jsUtf8Psk(jsPsk->ToString());
+  Nan::Utf8String jsUtf8Psk(jsPsk->ToString(context).ToLocalChecked());
   int pskLen = jsUtf8Psk.length();
   if (pskLen > 0) {
     psk = (char *)malloc(sizeof(char)*(pskLen+1));
