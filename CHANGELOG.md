@@ -1,3 +1,10 @@
+# 2.4.28
+* Node.js 12 support (including changes from [node-mbed-dtls-modified](https://www.npmjs.com/package/node-mbed-dtls-modified) and AI)
+* Fixed mbedtls package to version 2.27.0
+* Updated vulnerable packages to latest compatible versions
+* Updated examples
+* Updated README
+
 # 2.4.4
 
 * Add some debug loggin
