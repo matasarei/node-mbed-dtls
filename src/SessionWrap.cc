@@ -41,7 +41,7 @@ v8::Local<v8::Object> SessionWrap::CreateFromContext(mbedtls_ssl_context *ssl, u
   v8::Local<v8::Function> cons = Nan::GetFunction(Nan::New(constructor)).ToLocalChecked();
 
   const unsigned argc = 0;
-  v8::Local<v8::Value> argv[argc] = {};
+  v8::Local<v8::Value> argv[argc + 1]; //no 0 size array allocation
   v8::Local<v8::Object> instance = Nan::NewInstance(cons, argc, argv).ToLocalChecked();
 
   SessionWrap *news = Nan::ObjectWrap::Unwrap<SessionWrap>(instance);
@@ -62,7 +62,7 @@ void SessionWrap::Restore(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   v8::Local<v8::Context> context = Nan::GetCurrentContext();
 
   v8::Local<v8::Object> object = info[0]->ToObject(context).ToLocalChecked();
-  session->ciphersuite = Nan::Get(object, Nan::New("ciphersuite").ToLocalChecked()).ToLocalChecked()->Uint32Value(context).FromJust();
+  session->ciphersuite = Nan::Get(object, Nan::New("ciphersuite").ToLocalChecked()).ToLocalChecked()->Uint32Value(context).ToChecked();
 
   v8::Local<v8::Object> rbv = Nan::Get(object, Nan::New("randbytes").ToLocalChecked()).ToLocalChecked()->ToObject(context).ToLocalChecked();
   memcpy(session->randbytes, Buffer::Data(rbv), Buffer::Length(rbv));
@@ -74,7 +74,7 @@ void SessionWrap::Restore(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   v8::Local<v8::Object> masterv = Nan::Get(object, Nan::New("master").ToLocalChecked()).ToLocalChecked()->ToObject(context).ToLocalChecked();
   memcpy(session->master, Buffer::Data(masterv), Buffer::Length(masterv));
 
-  session->in_epoch = Nan::Get(object, Nan::New("in_epoch").ToLocalChecked()).ToLocalChecked()->Uint32Value(context).FromJust();
+  session->in_epoch = Nan::Get(object, Nan::New("in_epoch").ToLocalChecked()).ToLocalChecked()->Uint32Value(context).ToChecked();
 
   v8::Local<v8::Object> out_ctrv = Nan::Get(object, Nan::New("out_ctr").ToLocalChecked()).ToLocalChecked()->ToObject(context).ToLocalChecked();
   memcpy(session->out_ctr, Buffer::Data(out_ctrv), Buffer::Length(out_ctrv));
@@ -88,7 +88,7 @@ NAN_GETTER(SessionWrap::GetCiphersuite) {
 NAN_SETTER(SessionWrap::SetCiphersuite) {
   SessionWrap *session = Nan::ObjectWrap::Unwrap<SessionWrap>(info.This());
   v8::Local<v8::Context> context = Nan::GetCurrentContext();
-  session->ciphersuite = value->Uint32Value(context).FromJust();
+  session->ciphersuite = value->Uint32Value(context).ToChecked();
 }
 
 
@@ -134,7 +134,7 @@ NAN_GETTER(SessionWrap::GetInEpoch) {
 NAN_SETTER(SessionWrap::SetInEpoch) {
   SessionWrap *session = Nan::ObjectWrap::Unwrap<SessionWrap>(info.This());
   v8::Local<v8::Context> context = Nan::GetCurrentContext();
-  session->in_epoch = value->Uint32Value(context).FromJust();
+  session->in_epoch = value->Uint32Value(context).ToChecked();
 }
 
 

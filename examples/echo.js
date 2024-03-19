@@ -6,6 +6,9 @@ var dtls = require('../index');
 function identityPskCallback(id) {
   let psk = '';
 
+  console.log( "identity received: ", id );
+  console.log( "looking up pre-shared-key..." );
+
   switch (id)  {
     case 'foo':
       psk = 'asdasdadasd';
@@ -22,7 +25,8 @@ function identityPskCallback(id) {
 }
 
 const opts = {
-  key: path.join(__dirname, '../test/private.der'),
+  key:  path.join(__dirname, '../test/key.pem'),
+  cert: path.join(__dirname, '../test/cert.pem'),
   debug: 4,
   identityPskCallback : identityPskCallback,
   handshakeTimeoutMin: 3000

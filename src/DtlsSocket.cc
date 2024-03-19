@@ -6,6 +6,7 @@
 
 #include "mbedtls/ssl_internal.h"
 #include "mbedtls/pk.h"
+#include "mbedtls/sha256.h"
 
 using namespace node;
 
@@ -30,10 +31,13 @@ DtlsSocket::Initialize(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE target) {
 
   Nan::SetAccessor(ctorInst, Nan::New("publicKey").ToLocalChecked(), GetPublicKey);
   Nan::SetAccessor(ctorInst, Nan::New("publicKeyPEM").ToLocalChecked(), GetPublicKeyPEM);
+  Nan::SetAccessor(ctorInst, Nan::New("publicKeyHash").ToLocalChecked(), GetPublicKeyHash);
+  Nan::SetAccessor(ctorInst, Nan::New("certificateHash").ToLocalChecked(), GetCertificateHash);
   Nan::SetAccessor(ctorInst, Nan::New("outCounter").ToLocalChecked(), GetOutCounter);
   Nan::SetAccessor(ctorInst, Nan::New("session").ToLocalChecked(), GetSession);
 
-  Nan::Set(target, Nan::New("DtlsSocket").ToLocalChecked(), ctor->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
+  v8::Local<v8::Context> context = Nan::GetCurrentContext();
+  Nan::Set(target, Nan::New("DtlsSocket").ToLocalChecked(), ctor->GetFunction(context).ToLocalChecked());
 }
 
 void DtlsSocket::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -71,8 +75,8 @@ void DtlsSocket::ReceiveDataFromNode(const Nan::FunctionCallbackInfo<v8::Value>&
     socket->store_data(recv_data, recv_len);
   }
 
-  int len = 1024;
-  unsigned char buf[len];
+  int len = MBEDTLS_SSL_IN_CONTENT_LEN;
+  unsigned char buf[MBEDTLS_SSL_IN_CONTENT_LEN];
   len = socket->receive_data(buf, len);
 
   if (len > 0) {
@@ -84,7 +88,7 @@ NAN_GETTER(DtlsSocket::GetPublicKey) {
   DtlsSocket *socket = Nan::ObjectWrap::Unwrap<DtlsSocket>(info.This());
 
   mbedtls_ssl_session *session = socket->ssl_context.session;
-  if (session == NULL) {
+  if (session == NULL || session->peer_cert == NULL) {
     return;
   }
   int ret;
@@ -120,6 +124,58 @@ NAN_GETTER(DtlsSocket::GetPublicKeyPEM) {
   }
 
   info.GetReturnValue().Set(Nan::CopyBuffer((char *)buf, strlen((const char *)buf)).ToLocalChecked());
+}
+
+NAN_GETTER(DtlsSocket::GetPublicKeyHash) {
+  DtlsSocket *socket = Nan::ObjectWrap::Unwrap<DtlsSocket>(info.This());
+
+  mbedtls_ssl_session *session = socket->ssl_context.session;
+  if (session == NULL ||
+      session->peer_cert == NULL) {
+    socket->isPublicKeyHashInitDone = false;
+    return;
+  }
+
+  if( socket->isPublicKeyHashInitDone == false )
+  {
+    int ret;
+    const size_t buf_len = 256;
+    unsigned char buf[buf_len];
+    mbedtls_pk_context pk = session->peer_cert->pk;
+    ret = mbedtls_pk_write_pubkey_der(&pk, buf, buf_len);
+    if (ret < 0) {
+      // TODO error?
+      return;
+    }
+
+    unsigned char* hash = new unsigned char(ret);
+    for (int i = 0; i < ret; i++) hash[i] = buf[buf_len - ret + i];
+
+    mbedtls_sha256_ret( hash, ret, socket->publicKeyHash, false );
+    socket->isPublicKeyHashInitDone = true;
+    delete[] hash;
+  }
+
+  info.GetReturnValue().Set(Nan::CopyBuffer((char *)socket->publicKeyHash, 32 ).ToLocalChecked());
+}
+
+NAN_GETTER(DtlsSocket::GetCertificateHash) {
+  DtlsSocket *socket = Nan::ObjectWrap::Unwrap<DtlsSocket>(info.This());
+
+  mbedtls_ssl_session *session = socket->ssl_context.session;
+  if (session == NULL ||
+      session->peer_cert == NULL) {
+    socket->isCertificateHashInitDone = false;
+    return;
+  }
+
+  if( socket->isCertificateHashInitDone == false )
+  {
+    mbedtls_sha256_ret( session->peer_cert->raw.p, session->peer_cert->raw.len, socket->certificateHash, false );
+    socket->isCertificateHashInitDone = true;
+  }
+
+  info.GetReturnValue().Set(Nan::CopyBuffer( (char *) socket->certificateHash, 32 ).ToLocalChecked());
 }
 
 NAN_GETTER(DtlsSocket::GetOutCounter) {
@@ -198,11 +254,16 @@ DtlsSocket::DtlsSocket(DtlsServer *server,
     error_cb(error_callback),
     handshake_cb(hs_callback),
     resume_sess_cb(resume_sess_callback),
-    session_wait(false) {
+    session_wait(false),
+    isPublicKeyHashInitDone(false),
+    isCertificateHashInitDone(false) {
   int ret;
 
   recv_len = 0;
   recv_buf = NULL;
+
+  /* zeroize first so that if we throw mbedtls_ssl_free doesn't free uninitialized memory*/
+  mbedtls_ssl_init(&ssl_context);
 
   if((ip = (unsigned char *)calloc(1, client_ip_len)) == NULL) {
     throwError(MBEDTLS_ERR_SSL_ALLOC_FAILED);
@@ -211,7 +272,6 @@ DtlsSocket::DtlsSocket(DtlsServer *server,
   memcpy(ip, client_ip, client_ip_len);
   ip_len = client_ip_len;
 
-  mbedtls_ssl_init(&ssl_context);
   ssl_config = server->config();
 
   if((ret = mbedtls_ssl_setup(&ssl_context, ssl_config)) != 0)
@@ -227,11 +287,13 @@ DtlsSocket::DtlsSocket(DtlsServer *server,
   mbedtls_ssl_session_reset(&ssl_context);
 
   /* For HelloVerifyRequest cookies */
+#if defined(MBEDTLS_SSL_DTLS_HELLO_VERIFY)
   if((ret = mbedtls_ssl_set_client_transport_id(&ssl_context, ip, ip_len)) != 0)
   {
     throwError(ret);
     return;
   }
+#endif
 }
 
 bool DtlsSocket::resume(SessionWrap *sess) {
@@ -251,9 +313,9 @@ bool DtlsSocket::resume(SessionWrap *sess) {
   memcpy(ssl_context.session_negotiate->id, sess->id, sess->id_len);
 
   ssl_context.session_negotiate->ciphersuite = sess->ciphersuite;
-  ssl_context.transform_negotiate->ciphersuite_info = mbedtls_ssl_ciphersuite_from_id(sess->ciphersuite);
+  ssl_context.handshake->ciphersuite_info = mbedtls_ssl_ciphersuite_from_id(sess->ciphersuite);
 
-  if (!ssl_context.transform_negotiate->ciphersuite_info)
+  if (!ssl_context.handshake->ciphersuite_info)
   {
     error(MBEDTLS_ERR_SSL_NO_USABLE_CIPHERSUITE);
     return false;
@@ -285,12 +347,13 @@ bool DtlsSocket::resume(SessionWrap *sess) {
 void DtlsSocket::reset() {
   int ret;
   mbedtls_ssl_session_reset(&ssl_context);
-
+#if defined(MBEDTLS_SSL_DTLS_HELLO_VERIFY)
   /* For HelloVerifyRequest cookies */
   if((ret = mbedtls_ssl_set_client_transport_id(&ssl_context, ip, ip_len)) != 0)
   {
     return error(ret);
   }
+#endif
 }
 
 int DtlsSocket::send_encrypted(const unsigned char *buf, size_t len) {
@@ -299,7 +362,7 @@ int DtlsSocket::send_encrypted(const unsigned char *buf, size_t len) {
   };
   v8::Local<v8::Function> sendCallbackDirect = send_cb->GetFunction();
   v8::Local<v8::Context> context = Nan::GetCurrentContext();
-  sendCallbackDirect->Call(context, context->Global(), 1, argv);
+  sendCallbackDirect->Call(context, Nan::GetCurrentContext()->Global(), 1, argv);
   return len;
 }
 

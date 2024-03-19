@@ -6,6 +6,7 @@ const mbed = require('./build/Release/node_mbed_dtls');
 
 const MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY = -0x7880;
 const MBEDTLS_ERR_SSL_CLIENT_RECONNECT = -0x6780;
+const FALL_BACK_EXPIRY = (3 * 45 * 1000) + 1000; // from NATPuncher.cpp (Note: in ms here not seconds ....)
 
 class DtlsSocket extends stream.Duplex {
   constructor(server, address, port) {
@@ -16,6 +17,7 @@ class DtlsSocket extends stream.Duplex {
     this.remotePort = port;
     this._hadError = false;
     this._sendClose = true;
+    this.expires = Date.now() + FALL_BACK_EXPIRY; // evo - for colecting stale
     const key = `${address}:${port}`;
 
     this.mbedSocket = new mbed.DtlsSocket(server.mbedServer, key,
@@ -25,7 +27,14 @@ class DtlsSocket extends stream.Duplex {
       this._renegotiate.bind(this));
 
     this.send = function(msg, offset, length, port, host, callback) {
-      this.mbedSocket.send(msg);
+      if (this.mbedSocket) {
+        this.mbedSocket.send(msg);
+      } else {
+        if (callback)
+          callback(new Error('mbedSocket not exist'));
+        else 
+          this.emit('error', new Error('mbedSocket not exist'));
+      }
     }
   }
 
@@ -78,9 +87,16 @@ class DtlsSocket extends stream.Duplex {
 //  }
 
   _write(chunk, encoding, callback) {
-    console.log("Srv instance socket send.\n");
+    //console.log("Srv instance socket send.\n");
     if (!this.mbedSocket) {
-      return callback(new Error('no mbed socket'));
+      //return callback(new Error('no mbed socket'));
+      
+      console.log("No mbed socket.\n"); //log instead of crash
+      callback();
+      if (this._clientEnd) {
+        this._finishEnd();
+      }
+      return;
     }
 
     this._sendCallback = callback;
@@ -109,7 +125,18 @@ class DtlsSocket extends stream.Duplex {
       return;
     }
 
-    this.emit('send', msg.length);
+    if(!this.remotePort)
+    {
+      this.emit('error', `Invalid remotePort in _sendEncrypted for : ${this.remoteAddress}:${this.remotePort}`);
+      return;
+    }
+
+    //this.emit('send', msg.length);
+    if(this.server.obfuscationCallback)
+    {
+      this.server.obfuscationCallback(msg);
+    }
+
     this.dgramSocket.send(msg, 0, msg.length, this.remotePort, this.remoteAddress, sendFinished);
   }
 

@@ -28,33 +28,18 @@
 #define MBEDTLS_SSL_PROTO_TLS1_2
 #define MBEDTLS_SSL_RAW_PUBLIC_KEY_SUPPORT
 
-/* ECC curves. */
-#define MBEDTLS_ECP_DP_SECP192R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP224R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP256R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP384R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP521R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP192K1_ENABLED
-#define MBEDTLS_ECP_DP_SECP224K1_ENABLED
-#define MBEDTLS_ECP_DP_SECP256K1_ENABLED
-#define MBEDTLS_ECP_DP_BP256R1_ENABLED
-#define MBEDTLS_ECP_DP_BP384R1_ENABLED
-#define MBEDTLS_ECP_DP_BP512R1_ENABLED
-#define MBEDTLS_ECP_DP_CURVE25519_ENABLED
+/* RSA */
+#define MBEDTLS_RSA_C 
+#define MBEDTLS_DHM_C
+#define MBEDTLS_PKCS1_V15
+#define MBEDTLS_X509_CRT_PARSE_C
+#define MBEDTLS_KEY_EXCHANGE_RSA_ENABLED
 
 #define MBEDTLS_SSL_AEAD_RANDOM_IV
 
 #define MBEDTLS_ECDSA_DETERMINISTIC
 #define MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
-//#define MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED  // TODO: Needs DHM. But DHM causes failure.
-#define MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED
 
-#define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
-#define MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED
-#define MBEDTLS_PK_PARSE_EC_EXTENDED
-
-
-#define MBEDTLS_SSL_DEBUG_ALL
 #define MBEDTLS_SSL_ENCRYPT_THEN_MAC
 #define MBEDTLS_SSL_EXTENDED_MASTER_SECRET
 #define MBEDTLS_SSL_FALLBACK_SCSV
@@ -96,10 +81,6 @@
 #define MBEDTLS_CERTS_C
 #define MBEDTLS_CIPHER_C
 #define MBEDTLS_CTR_DRBG_C
-//#define MBEDTLS_DHM_C   // TODO: Why does enablement cause failures?
-#define MBEDTLS_ECDH_C
-#define MBEDTLS_ECDSA_C
-#define MBEDTLS_ECP_C
 #define MBEDTLS_ENTROPY_C
 #define MBEDTLS_GCM_C
 #define MBEDTLS_HMAC_DRBG_C
@@ -117,10 +98,8 @@
 #define MBEDTLS_RIPEMD160_C
 #define MBEDTLS_SHA1_C
 #define MBEDTLS_SHA256_C
-//#define MBEDTLS_SHA512_C   // TODO: Why does enablement cause failures?
 
 #define MBEDTLS_SSL_COOKIE_C
-//#define MBEDTLS_SSL_TICKET_C
 
 #define MBEDTLS_SSL_TLS_C
 #define MBEDTLS_TIMING_C
@@ -133,20 +112,23 @@
 #define MBEDTLS_XTEA_C
 
 
+//#define MBEDTLS_SSL_DEBUG_ALL
+//#define MBEDTLS_DEBUG_C
 
-#define MBEDTLS_DEBUG_C
-#define MBEDTLS_ERROR_C
+#define MBEDTLS_ERROR_C  //Linker errors without
 
 /* Save RAM at the expense of ROM */
 #define MBEDTLS_AES_ROM_TABLES
-
+#define MBEDTLS_SSL_KEEP_PEER_CERTIFICATE // evo Mbed TLS 2.26.0
 
 /*
  * Save RAM at the expense of interoperability: do this only if you control
  * both ends of the connection!  (See comments in "mbedtls/ssl.h".)
  * The optimal size here depends on the typical size of records.
  */
-#define MBEDTLS_SSL_MAX_CONTENT_LEN             1280
+#define MBEDTLS_SSL_MAX_CONTENT_LEN             1500
+#define MBEDTLS_SSL_IN_CONTENT_LEN              1500
+#define MBEDTLS_SSL_OUT_CONTENT_LEN              1373 // evo - TBD: prior was 1387... why?
 
 #include "mbedtls/check_config.h"
 

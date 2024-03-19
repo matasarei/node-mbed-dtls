@@ -6,6 +6,8 @@ node DTLS (server and client) wrapping [mbedtls](https://github.com/ARMmbed/mbed
 #### Lineage
 This package was forked from [Spark's original server implementation](https://github.com/spark/node-mbed-dtls) and merged with [their client implementation](https://github.com/spark/node-mbed-dtls-client).
 
+*** Some of the lineage of this code, particularly the extended certificate support, is a little murky. If you are aware of the fork that added it please let me know so that I may add the proper acknowledgements.
+
 #### Changes made to the fork:
 The wrapped library is now pulled directly from ARMmbed's repo, rather than Spark's. The ciphersuites and API have been extended to allow PSK and CA certificates to be loaded at runtime, and on a per-instance basis.
 

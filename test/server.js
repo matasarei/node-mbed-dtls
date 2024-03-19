@@ -8,8 +8,10 @@ var assert = require('assert');
 var dtls = require('../index');
 
 const opts = {
-	cert: path.join(__dirname, 'public.der'),
-	key: path.join(__dirname, 'private.der')
+	cert: path.join(__dirname, 'cert.pem'),
+	key: path.join(__dirname, 'key.pem'),
+	identityPskCallback : null,
+	debug: 4,
 };
 
 describe('createServer', function() {
@@ -22,12 +24,16 @@ describe('createServer', function() {
 		s1.listen(5683);
 		const s2 = dtls.createServer(opts);
 		s2.once('error', (err) => {
+			console.log('Error event emitted');
 			checkFinally(() => {
+				console.error(err)
 				assert(err);
 			}, () => {
 				s1.close();
-			}, done);
+				done();
+			});
 		});
+		console.log('Attempting to bind second server to same port');
 		s2.listen(5683);
 	});
 

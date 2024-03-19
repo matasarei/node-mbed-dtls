@@ -1,7 +1,7 @@
 {
   "name": "node-mbed-dtls",
-  "version": "2.4.4",
-  "description": "Node mbed DTLS",
+  "version": "2.4.28",
+  "description": "Node.js bindings for mbedTLS",
   "main": "index.js",
   "scripts": {
     "test": "mocha test/server.js",
@@ -21,12 +21,12 @@
     "url": "https://github.com/matasarei/node-mbed-dtls.git"
   },
   "devDependencies": {
-    "mocha": "^10.3.0",
-    "node-gyp": "^10.0.1",
-    "should": "^13.2.3",
-    "sinon": "^17.0.1"
+    "mocha": "^2.3.3",
+    "node-gyp": "^3.0.3",
+    "should": "^7.1.0",
+    "sinon": "^1.17.1"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=12.0.0"
   }
 }

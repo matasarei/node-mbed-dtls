@@ -23,6 +23,8 @@ public:
   static void Renegotiate(const Nan::FunctionCallbackInfo<v8::Value>& info);
   static NAN_GETTER(GetPublicKey);
   static NAN_GETTER(GetPublicKeyPEM);
+  static NAN_GETTER(GetPublicKeyHash);
+  static NAN_GETTER(GetCertificateHash);
   static NAN_GETTER(GetOutCounter);
   static NAN_GETTER(GetSession);
   DtlsSocket(DtlsServer *server,
@@ -63,6 +65,11 @@ private:
 
   bool session_wait;
   uint8_t random[64];
+
+  unsigned char publicKeyHash[32];
+  bool isPublicKeyHashInitDone;
+  unsigned char certificateHash[32];
+  bool isCertificateHashInitDone;
 };
 
 #endif

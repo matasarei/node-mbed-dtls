@@ -12,6 +12,7 @@ const supported_ciphersuites = Object.freeze({
 });
 
 var DtlsServer = require('./server');
+const dtls_options = require('./dtls_options');
 const DtlsClientSocket = require('./client_socket');
 
 function createServer(options, secureConnectionListener) {
@@ -34,5 +35,8 @@ function connect(options, callback) {
   return socket;
 }
 
-
-module.exports = { createServer, connect };
+module.exports = {
+  createServer,
+  connect,
+  VerifyModes: dtls_options.VerifyModes
+};

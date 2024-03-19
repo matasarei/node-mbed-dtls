@@ -43,14 +43,19 @@ class DtlsClientSocket extends stream.Duplex {
       this._socketClosed();
     });
 
-    const privateKey    = Buffer.isBuffer(options.key)           ? options.key           : false;
-    const peerPublicKey = Buffer.isBuffer(options.peerPublicKey) ? options.peerPublicKey : false;
-    const ca_cert       = Buffer.isBuffer(options.CACert)        ? options.CACert        : false;
-    const psk           = Buffer.isBuffer(options.psk)           ? options.psk           : false;
-    const psk_ident     = Buffer.isBuffer(options.PSKIdent)      ? options.PSKIdent      : false;
+    const clientKey     = Buffer.isBuffer(options.key)      ? Buffer.concat([options.key, new Buffer([0])])    : false;
+    const clientCert    = Buffer.isBuffer(options.cert)     ? Buffer.concat([options.cert, new Buffer([0])])   : false;
+    const ca_cert       = Buffer.isBuffer(options.CACert)   ? Buffer.concat([options.CACert, new Buffer([0])]) : false;
+    const psk           = Buffer.isBuffer(options.psk)      ? options.psk           : false;
+    const psk_ident     = Buffer.isBuffer(options.PSKIdent) ? options.PSKIdent      : false;
+
+    if( !psk && !clientKey )
+    {
+      throw "you must define either a PSK or a private key.";
+    }
 
     this.mbedSocket = new mbed.DtlsClientSocket(
-      privateKey, peerPublicKey,          // Keys (Buffers or FS paths)
+      clientKey, clientCert,              // Keys (Buffers)
       ca_cert,                            // CA   (Buffer)
       psk,                                // PSK  (Buffer)
       psk_ident,                          // PSK ident (Buffer)
