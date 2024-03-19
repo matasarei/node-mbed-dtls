@@ -1,15 +1,15 @@
 ## node-mbed-dtls
 ================
 
-node DTLS (server and client) wrapping [mbedtls](https://github.com/ARMmbed/mbedtls).
+Node DTLS (server and client) wrapping [mbedtls](https://github.com/ARMmbed/mbedtls).
 
 #### Lineage
-This package was forked from [Spark's original server implementation](https://github.com/spark/node-mbed-dtls) and merged with [their client implementation](https://github.com/spark/node-mbed-dtls-client).
-
-*** Some of the lineage of this code, particularly the extended certificate support, is a little murky. If you are aware of the fork that added it please let me know so that I may add the proper acknowledgements.
+This package was forked from Spark's original server implementation (abandoned) and merged with [their client implementation](https://github.com/spark/node-mbed-dtls-client).
 
 #### Changes made to the fork:
-The wrapped library is now pulled directly from ARMmbed's repo, rather than Spark's. The ciphersuites and API have been extended to allow PSK and CA certificates to be loaded at runtime, and on a per-instance basis.
+* The wrapped library is now pulled directly from ARMmbed's repo, rather than Spark's. 
+* The cipher suites and API have been extended to allow PSK and CA certificates to be loaded at runtime, and on a per-instance basis.
+* Applied fixes and improvements from AI and [node-mbed-dtls-modified](https://www.npmjs.com/package/node-mbed-dtls-modified), including Node.js 12 support.
 
 --------------
 
@@ -21,19 +21,16 @@ Here is the scope of possible options, along with their default values.
       host:          'localhost',  // The target address or hostname.
       port:          5684,         // The target UDP port.
       socket:        undefined,    // An already established socket, if you'd rather spin your own.
-      key:           undefined,    // DER format in a buffer. Our private key.
-      peerPublicKey: undefined,    // DER format in a buffer. The server's public key, if applicable.
+      key:           undefined,    // Buffer. Our private key.
+      cert:          undefined,    // Buffer. Our public key.
       psk:           undefined,    // Buffer. Pre-shared Symmetric Key, if applicable.
       PSKIdent:      undefined,    // Buffer. PSK Identity, if applicable.
-      CACert:        undefined,    // DER format in a buffer. CA public key, if applicable.
+      CACert:        undefined,    // Buffer. CA public key, if applicable.
       debug:         0             // How chatty is the library? Larger values generate more log.
     };
 
-The cryptographic parameters will likely change in the future as options are added for...
-  * TODO: Ciphersuite limitation/selection
-  * TODO: Uniform key/id interface
-  * TODO: Conditional validation
-  * TODO: Capability discovery
+Must be provided with either a `key` and `cert` or a `psk` and `PSKIdent`. 
+If `CACert` is provided, the server's certificate will be validated against it.
 
 #### A client connection might emit...
 
@@ -112,4 +109,3 @@ Here is the scope of possible server options, along with their default values.
     // err:    Error string/code.
     // client: The client socket that had the problem.
     server.on('error', (err, client) => {});
-
