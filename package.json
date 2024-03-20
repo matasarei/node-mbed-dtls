@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha test/server.js",
-    "preinstall": "git submodule update --init mbedtls",
+    "prepare": "git submodule update --init mbedtls",
     "install": "node-gyp rebuild",
     "build": "node-gyp build",
     "start": "node index.js"
