@@ -1,6 +1,6 @@
 {
   "name": "node-mbed-dtls",
-  "version": "2.4.29",
+  "version": "2.5.0",
   "description": "Node.js bindings for mbedTLS",
   "main": "index.js",
   "scripts": {

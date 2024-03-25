@@ -1,13 +1,6 @@
-# 2.4.30
-* mbedtls repo changed to the [original one](git@github.com:Mbed-TLS/mbedtls.git)
-* mbedtls version fixed to 2.27.0
-
-# 2.4.29
-* mbedtls moved to submodules
-* mbedtls branch fixed to particle-2.22.0
-
-# 2.4.28
+# 2.5.0
 * Node.js 12 support (including changes from [node-mbed-dtls-modified](https://www.npmjs.com/package/node-mbed-dtls-modified) and AI)
+* Moved mbedtls to submodules
 * Fixed mbedtls package to version 2.27.0
 * Updated vulnerable packages to latest compatible versions
 * Updated examples
