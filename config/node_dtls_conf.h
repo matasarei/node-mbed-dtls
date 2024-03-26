@@ -29,7 +29,7 @@
 #define MBEDTLS_SSL_RAW_PUBLIC_KEY_SUPPORT
 
 /* RSA */
-#define MBEDTLS_RSA_C 
+#define MBEDTLS_RSA_C
 #define MBEDTLS_DHM_C
 #define MBEDTLS_PKCS1_V15
 #define MBEDTLS_X509_CRT_PARSE_C
@@ -111,9 +111,8 @@
 
 #define MBEDTLS_XTEA_C
 
-
-//#define MBEDTLS_SSL_DEBUG_ALL
-//#define MBEDTLS_DEBUG_C
+#define MBEDTLS_SSL_DEBUG_ALL
+#define MBEDTLS_DEBUG_C
 
 #define MBEDTLS_ERROR_C  //Linker errors without
 
