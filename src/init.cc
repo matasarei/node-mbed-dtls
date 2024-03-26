@@ -1,14 +1,16 @@
+#include <napi.h>
 
+#include "Constants.h"
 #include "DtlsServer.h"
 #include "DtlsSocket.h"
-#include "DtlsClientSocket.h"
 #include "SessionWrap.h"
 
-NAN_MODULE_INIT(init) {
-  DtlsClientSocket::Initialize(target);
-	DtlsServer::Initialize(target);
-  DtlsSocket::Initialize(target);
-	SessionWrap::Initialize(target);
+Napi::Object init(Napi::Env env, Napi::Object exports) {
+	Constants::Initialize(env, exports);
+	DtlsServer::Initialize(env, exports);
+	DtlsSocket::Initialize(env, exports);
+	SessionWrap::Initialize(env, exports);
+	return exports;
 }
 
-NODE_MODULE(node_mbed_dtls, init);
+NODE_API_MODULE(node_mbed_dtls, init);

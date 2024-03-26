@@ -1,3 +1,7 @@
+# 3.0.0
+* Migrated to N-API;
+* DTLS client moved to the separate repository [node-mbed-dtls-client](https://github.com/matasarei/node-mbed-dtls-client);
+
 # 2.5.0
 * Node.js 12 support (including changes from [node-mbed-dtls-modified](https://www.npmjs.com/package/node-mbed-dtls-modified) and AI)
 * Moved mbedtls to submodules

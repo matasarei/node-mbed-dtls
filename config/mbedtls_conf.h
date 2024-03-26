@@ -55,7 +55,6 @@
 #define MBEDTLS_SSL_DTLS_HELLO_VERIFY
 #define MBEDTLS_SSL_DTLS_CLIENT_PORT_REUSE
 #define MBEDTLS_SSL_DTLS_BADMAC_LIMIT
-#define MBEDTLS_SSL_DTLS_HANDSHAKE_QUEUE
 
 #define MBEDTLS_SSL_EXPORT_KEYS
 #define MBEDTLS_SSL_SERVER_NAME_INDICATION
@@ -97,6 +96,7 @@
 
 #define MBEDTLS_RIPEMD160_C
 #define MBEDTLS_SHA1_C
+#define MBEDTLS_SHA224_C
 #define MBEDTLS_SHA256_C
 
 #define MBEDTLS_SSL_COOKIE_C
@@ -109,10 +109,8 @@
 #define MBEDTLS_X509_CRT_PARSE_C
 #define MBEDTLS_X509_CRL_PARSE_C
 
-#define MBEDTLS_XTEA_C
-
-#define MBEDTLS_SSL_DEBUG_ALL
-#define MBEDTLS_DEBUG_C
+//#define MBEDTLS_SSL_DEBUG_ALL
+//#define MBEDTLS_DEBUG_C
 
 #define MBEDTLS_ERROR_C  //Linker errors without
 
@@ -127,7 +125,7 @@
  */
 #define MBEDTLS_SSL_MAX_CONTENT_LEN             1500
 #define MBEDTLS_SSL_IN_CONTENT_LEN              1500
-#define MBEDTLS_SSL_OUT_CONTENT_LEN              1373 // evo - TBD: prior was 1387... why?
+#define MBEDTLS_SSL_OUT_CONTENT_LEN             1373 // evo - TBD: prior was 1387... why?
 
 #include "mbedtls/check_config.h"
 

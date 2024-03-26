@@ -1,111 +1,54 @@
-## node-mbed-dtls
-================
+# node-mbed-dtls-client
 
-Node DTLS (server and client) wrapping [mbedtls](https://github.com/ARMmbed/mbedtls).
+Node DTLS server wrapping [mbedtls](https://github.com/Mbed-TLS/mbedtls).
 
-#### Lineage
-This package was forked from Spark's original server implementation (abandoned) and merged with [their client implementation](https://github.com/spark/node-mbed-dtls-client).
+Changes made to the fork:
+* Merged changes from a fork, [node-mbed-dtls-modified](https://www.npmjs.com/package/node-mbed-dtls-modified), including Node.js 12 support;
+* Merged changes from a fork, [node-mbed-dtls](https://www.npmjs.com/package/node-mbed-dtls), including N-API migration;
+* Removed the client part of the library, which is now available as a separate package:
+[node-mbed-dtls-client](https://github.com/matasarei/node-mbed-dtls-client).
 
-#### Changes made to the fork:
-* The wrapped library is now pulled directly from ARMmbed's repo, rather than Spark's. 
-* The cipher suites and API have been extended to allow PSK and CA certificates to be loaded at runtime, and on a per-instance basis.
-* Applied fixes and improvements from AI and [node-mbed-dtls-modified](https://www.npmjs.com/package/node-mbed-dtls-modified), including Node.js 12 support.
-
---------------
-
-## DTLS Client API:
-
-Here is the scope of possible options, along with their default values.
-
-    const options = {
-      host:          'localhost',  // The target address or hostname.
-      port:          5684,         // The target UDP port.
-      socket:        undefined,    // An already established socket, if you'd rather spin your own.
-      key:           undefined,    // Buffer. Our private key.
-      cert:          undefined,    // Buffer. Our public key.
-      psk:           undefined,    // Buffer. Pre-shared Symmetric Key, if applicable.
-      PSKIdent:      undefined,    // Buffer. PSK Identity, if applicable.
-      CACert:        undefined,    // Buffer. CA public key, if applicable.
-      debug:         0             // How chatty is the library? Larger values generate more log.
-    };
-
-Must be provided with either a `key` and `cert` or a `psk` and `PSKIdent`. 
-If `CACert` is provided, the server's certificate will be validated against it.
-
-#### A client connection might emit...
-
-**error** when the connection has a problem.
-
-    // err: Error code.
-    // msg: Optional error string.
-    client.on('error', (err, msg) => {});
-
-
-**close** when the socket closes.
-
-    //hadError:  A boolean. Did the socket close because of an error?
-    client.on('close', (hadError) => {});
-
-
-**secureConnect** when we successfully establish a connection. This will only occur once for any given client.
-
-    // socket:  A connection socket, ready for data.
-    client.on('secureConnect', (socket) => {});
-
-
---------------
+## Setup & Build
+```bash
+git submodule update --init mbedtls
+npm i
+```
 
 ## DTLS Server API:
-Here is the scope of possible server options, along with their default values.
 
-    const options = {
-      key:                 null,   // Our server's private key. DER format in a Buffer.
-      handshakeTimeoutMin: 3000,   // How many milliseconds can a handshake subtend before being dropped?
-      debug:               0       // How chatty is the library? Larger values generate more log.
-    };
+```javascript
+// Key is the only required option. The rest are optional.
+const options = {
+  key: path.join('key.pem'), // Path to the server's private key.
+  identityPskCallback: null, // Callback. PSK resolver, if we're using PSK.
+  handshakeTimeoutMin: 3000, // How many milliseconds can a handshake subtend before being dropped?
+  debug:               0     // How chatty is the library? Larger values generate more log.
+};
 
+const dtlsserver = dtls.createServer(opts, socket => {
+  // socket is a duplex stream.
+  socket.on('data', data => {
+    // Handle incoming data.
+  });
+});
+```
 
-#### General server emits....
+### Events
 
-**error** when the server has a problem.
+`error` when the server has a problem.
+```javascript
+// err: Error string/code.
+server.on('error', (err) => {});
+```
 
-    // err: Error string/code.
-    server.on('error', (err) => {});
+`close` when the server stops listening.
+```javascript
+// No arguments to callback.
+server.on('error', (err) => {});
+```
 
-
-**close** when the server stops listening.
-
-    // No arguments to callback.
-    server.on('error', (err) => {});
-
-
-**listening** when the server setup completes without problems.
-
-    // No arguments to callback.
-    server.on('listening', () => {});
-
-
-#### Emits related to client handling...
-
-**lookupKey** TODO: Doc forthcoming.
-
-**resumeSession** TODO: Doc forthcoming.
-
-**secureConnection** when a client successfully establishes a connection. This will only occur once for any unique client.
-
-    // client:   The client socket
-    // session:  The session identifier
-    server.on('secureConnection', (client, session) => {});
-
-
-**connection** each time a client connects. This is not the same thing as session-establishment (See: secureConnection).
-
-    // client: The client socket that connected.
-    server.on('connection', (client) => {});
-
-
-**clientError** when a client socket experiences a problem.
-
-    // err:    Error string/code.
-    // client: The client socket that had the problem.
-    server.on('error', (err, client) => {});
+`listening` when the server setup completes without problems.
+```javascript
+// No arguments to callback.
+server.on('listening', () => {});
+````

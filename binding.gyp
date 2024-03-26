@@ -2,35 +2,47 @@
   "targets": [
     {
       "target_name": "mbedtls",
+      "cflags!": [ "-fno-exceptions" ],
+      "cflags_cc!": [ "-fno-exceptions" ],
+      "xcode_settings": { "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
+        "CLANG_CXX_LIBRARY": "libc++",
+        "MACOSX_DEPLOYMENT_TARGET": "12.2",
+      },
+      "msvs_settings": {
+        "VCCLCompilerTool": { "ExceptionHandling": 1 },
+      },
       "type": "static_library",
       "sources": [
         "mbedtls/library/debug.c",
+        "mbedtls/library/net_sockets.c",
         "mbedtls/library/ssl_cache.c",
         "mbedtls/library/ssl_ciphersuites.c",
         "mbedtls/library/ssl_cli.c",
         "mbedtls/library/ssl_cookie.c",
+        "mbedtls/library/ssl_msg.c",
         "mbedtls/library/ssl_srv.c",
         "mbedtls/library/ssl_ticket.c",
-        "mbedtls/library/ssl_tls.c",
-        "mbedtls/library/ssl_msg.c"
+        "mbedtls/library/ssl_tls.c"
       ],
       "include_dirs": [
         "mbedtls/include",
         "config"
       ],
       "defines": [
-        "MBEDTLS_CONFIG_FILE=\"node_dtls_conf.h\""
-      ],
-      "conditions": [
-          ['OS=="linux"', {
-              'cflags': [
-                  '-g'
-              ]
-          }]
+        "MBEDTLS_CONFIG_FILE=\"mbedtls_conf.h\""
       ]
     },
     {
       "target_name": "mbedx509",
+      "cflags!": [ "-fno-exceptions" ],
+      "cflags_cc!": [ "-fno-exceptions" ],
+      "xcode_settings": { "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
+        "CLANG_CXX_LIBRARY": "libc++",
+        "MACOSX_DEPLOYMENT_TARGET": "12.2",
+      },
+      "msvs_settings": {
+        "VCCLCompilerTool": { "ExceptionHandling": 1 },
+      },
       "type": "static_library",
       "sources": [
         "mbedtls/library/certs.c",
@@ -48,18 +60,20 @@
         "config"
       ],
       "defines": [
-        "MBEDTLS_CONFIG_FILE=\"node_dtls_conf.h\""
-      ],
-      "conditions": [
-          ['OS=="linux"', {
-              'cflags': [
-                  '-g'
-              ]
-          }]
+        "MBEDTLS_CONFIG_FILE=\"mbedtls_conf.h\""
       ]
     },
     {
       "target_name": "mbedcrypto",
+      "cflags!": [ "-fno-exceptions" ],
+      "cflags_cc!": [ "-fno-exceptions" ],
+      "xcode_settings": { "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
+        "CLANG_CXX_LIBRARY": "libc++",
+        "MACOSX_DEPLOYMENT_TARGET": "12.2",
+      },
+      "msvs_settings": {
+        "VCCLCompilerTool": { "ExceptionHandling": 1 },
+      },
       "type": "static_library",
       "sources": [
         "mbedtls/library/aes.c",
@@ -101,8 +115,8 @@
         "mbedtls/library/pkcs5.c",
         "mbedtls/library/pkparse.c",
         "mbedtls/library/pkwrite.c",
-        "mbedtls/library/platform.c",
         "mbedtls/library/platform_util.c",
+        "mbedtls/library/platform.c",
         "mbedtls/library/ripemd160.c",
         "mbedtls/library/rsa.c",
         "mbedtls/library/rsa_internal.c",
@@ -120,44 +134,40 @@
         "config"
       ],
       "defines": [
-        "MBEDTLS_CONFIG_FILE=\"node_dtls_conf.h\""
-      ],
-      "conditions": [
-          ['OS=="linux"', {
-              'cflags': [
-                  '-g'
-              ]
-          }]
+        "MBEDTLS_CONFIG_FILE=\"mbedtls_conf.h\""
       ]
     },
     {
       "target_name": "node_mbed_dtls",
+      "cflags!": [ "-fno-exceptions" ],
+      "cflags_cc!": [ "-fno-exceptions" ],
+      "xcode_settings": { "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
+        "CLANG_CXX_LIBRARY": "libc++",
+        "MACOSX_DEPLOYMENT_TARGET": "12.2",
+      },
+      "msvs_settings": {
+        "VCCLCompilerTool": { "ExceptionHandling": 1 },
+      },
       "sources": [
         "src/init.cc",
+        "src/Constants.cc",
         "src/DtlsServer.cc",
         "src/DtlsSocket.cc",
-        "src/DtlsClientSocket.cc",
         "src/SessionWrap.cc"
       ],
       "include_dirs": [
-        "<!(node -e \"require('nan')\")",
+        "<!@(node -p \"require('node-addon-api').include\")",
         "mbedtls/include",
         "config"
       ],
       "dependencies": [
+        "<!(node -p \"require('node-addon-api').gyp\")",
         "mbedtls",
         "mbedx509",
         "mbedcrypto"
       ],
       "defines": [
-        "MBEDTLS_CONFIG_FILE=\"node_dtls_conf.h\""
-      ],
-      "conditions": [
-          ['OS=="linux"', {
-              'cflags': [
-                  '-g'
-              ]
-          }]
+        "MBEDTLS_CONFIG_FILE=\"mbedtls_conf.h\""
       ]
     }
   ]
