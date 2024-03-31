@@ -1,28 +1,30 @@
 {
-  "name": "node-mbed-dtls",
-  "version": "2.5.0",
-  "description": "Node.js bindings for mbedTLS",
+  "name": "node-mbed-dtls-server",
+  "version": "3.0.0",
+  "description": "DTLS server wrapping MbedTLS",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/server.js",
-    "prepare": "git submodule update --init mbedtls",
+    "build": "node-gyp rebuild -j 8",
+    "debug": "node-gyp rebuild -j 8 --debug",
+    "clean": "node-gyp clean",
     "install": "node-gyp rebuild",
-    "build": "node-gyp build",
-    "start": "node index.js"
+    "test": "mocha **/*.test.js"
   },
   "author": "Bryce Kahle",
   "license": "Apache-2.0",
   "gypfile": true,
   "dependencies": {
-    "nan": "^2.1.0"
+    "bindings": "^1.5.0",
+    "chai": "^4.2.0",
+    "node-addon-api": "^1.6.3"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/matasarei/node-mbed-dtls.git"
+    "url": "https://github.com/matasarei/node-mbed-dtls-server.git"
   },
   "devDependencies": {
     "mocha": "^10.3.0",
-    "node-gyp": "^10.0.1",
+    "node-gyp": "^8.4.1",
     "should": "^7.1.0",
     "sinon": "^1.17.1"
   },

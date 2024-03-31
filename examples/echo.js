@@ -1,3 +1,8 @@
+/**
+ * Use the client-side echo example from the `node-mbed-dtls-client` repository:
+ * https://github.com/matasarei/node-mbed-dtls-client/blob/master/examples/echo.js
+ */
+
 'use strict';
 
 var path = require('path');
@@ -25,17 +30,15 @@ function identityPskCallback(id) {
 }
 
 const opts = {
-  key:  path.join(__dirname, '../test/key.pem'),
-  cert: path.join(__dirname, '../test/cert.pem'),
+  key: path.join(__dirname, '../test/key.pem'),
+  identityPskCallback: identityPskCallback,
   debug: 4,
-  identityPskCallback : identityPskCallback,
   handshakeTimeoutMin: 3000
 };
 
 const dtlsserver = dtls.createServer(opts, socket => {
   console.log(`secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
   socket.on('data', msg => {
-    //console.log('received:', msg.toString('utf8'));
     socket.write(msg);
     if (msg.toString('utf8').indexOf('close') === 0) {
       console.log('closing');
@@ -78,5 +81,4 @@ dtlsserver.on('resumeSession', (sessionId, callback) => {
   });
 });
 
-
-dtlsserver.listen(5684);  // Actually begin listening.
+dtlsserver.listen(5684);
