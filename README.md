@@ -1,4 +1,4 @@
-# node-mbed-dtls-client
+# node-mbed-dtls-server
 
 Node DTLS server wrapping [mbedtls](https://github.com/Mbed-TLS/mbedtls).
 
@@ -19,7 +19,7 @@ npm i
 ```javascript
 // Key is the only required option. The rest are optional.
 const options = {
-  key: path.join('key.pem'), // Path to the server's private key.
+  key:                '...', // Path to the server's private key.
   identityPskCallback: null, // Callback. PSK resolver, if we're using PSK.
   handshakeTimeoutMin: 3000, // How many milliseconds can a handshake subtend before being dropped?
   debug:               0     // How chatty is the library? Larger values generate more log.
