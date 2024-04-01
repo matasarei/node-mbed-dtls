@@ -4,7 +4,6 @@ const stream = require('stream');
 
 var mbed = require('bindings')('node_mbed_dtls.node');
 
-const HANDSHAKE_LOOP_INTERVAL = 500; // ms
 const HANDSHAKE_TIMEOUT_MAX = 60000; // ms
 
 const MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY = -0x7880;
@@ -33,18 +32,18 @@ class DtlsSocket extends stream.Duplex {
 			// handshake control loop: it calls the mbedtls receiveData like a loop in order to:
 			// 1) increase dtls timeout counters for packet retransmission
 			// 2) close socket after handshake max timeout if something goes wrong
-			this._handshakeLoop = setInterval(() => {
+			this._handshakeLoop = setImmediate(() => {
 				this.mbedSocket.receiveData("");
 				if (new Date().getTime() - this._handshakeLoopTimeout >= HANDSHAKE_TIMEOUT_MAX) {
 					this._end();
 				}
-			}, HANDSHAKE_LOOP_INTERVAL);
+			});
 		} catch (error) {
 			// Don't _error() here because that method assumues we've had
 			// an active socket at some point which is not the case here.
 			this.emit('error', 0, error.message);
 			if(this._handshakeLoop) {
-				clearInterval(this._handshakeLoop);
+				clearImmediate(this._handshakeLoop);
 			}
 		}
 	}
@@ -83,7 +82,7 @@ class DtlsSocket extends stream.Duplex {
 			this.resumed = true;
 		}
 		if (this._handshakeLoop) {
-			clearInterval(this._handshakeLoop);
+			clearImmediate(this._handshakeLoop);
 		}
 		return success;
 	}
@@ -99,7 +98,12 @@ class DtlsSocket extends stream.Duplex {
 		}
 
 		this._sendCallback = callback;
-		this.mbedSocket.send(chunk);
+
+		try {
+			this.mbedSocket.send(chunk);
+		} catch (error) {
+			return callback(error);
+		}
 	}
 
 	_sendEncrypted(msg) {
@@ -132,7 +136,7 @@ class DtlsSocket extends stream.Duplex {
 		this.connected = true;
 		this.emit('secureConnect');
 		if (this._handshakeLoop) {
-			clearInterval(this._handshakeLoop);
+			clearImmediate(this._handshakeLoop);
 		}
 	}
 
@@ -151,17 +155,20 @@ class DtlsSocket extends stream.Duplex {
 		}
 
 		this._hadError = true;
+
 		if (this._sendCallback) {
 			this._sendCallback(code);
 			this._sendCallback = null;
 		} else {
 			this.emit('error', code, msg);
 		}
+
 		this._end();
 	}
 
 	_renegotiate(sessionId) {
 		const done = this._renegotiateCallback.bind(this);
+
 		if (!this.server.emit('renegotiate', sessionId.toString('hex'), this, done)) {
 			process.nextTick(done);
 		}
@@ -183,7 +190,7 @@ class DtlsSocket extends stream.Duplex {
 		this.mbedSocket.renegotiate(s || undefined);
 		this.resumed = true;
 		if (this._handshakeLoop) {
-			clearInterval(this._handshakeLoop);
+			clearImmediate(this._handshakeLoop);
 		}
 	}
 
@@ -191,6 +198,7 @@ class DtlsSocket extends stream.Duplex {
 		if (!this.mbedSocket) {
 			return false;
 		}
+
 		if (msg && msg.length < 4) {
 			return false;
 		}
@@ -235,8 +243,9 @@ class DtlsSocket extends stream.Duplex {
 		this._resetting = false;
 		this.resumed = false;
 		this.connected = false;
+
 		if (this._handshakeLoop) {
-			clearInterval(this._handshakeLoop);
+			clearImmediate(this._handshakeLoop);
 		}
 	}
 
@@ -259,9 +268,11 @@ class DtlsSocket extends stream.Duplex {
 
 		this.emit('closing');
 		this.mbedSocket = null;
+
 		if (this._handshakeLoop) {
-			clearInterval(this._handshakeLoop);
+			clearImmediate(this._handshakeLoop);
 		}
+
 		if (noSend || !this._clientEnd) {
 			this._finishEnd();
 		}
