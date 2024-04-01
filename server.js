@@ -193,6 +193,14 @@ class DtlsServer extends EventEmitter {
 		this.dgramSocket.send(malformedHelloRequest, rinfo.port, rinfo.address);
 	}
 
+	/**
+	 * This function attempts to resume a session for a client.
+	 * If the session cannot be resumed, it ends the client and removes it from the sockets list.
+	 * @param {Object} client - The client to attempt to resume the session for.
+	 * @param {Buffer} msg - The message received from the client.
+	 * @param {string} key - The key of the client in the sockets list.
+	 * @param {Function} cb - A callback function to be called after attempting to resume the session.
+	 */
 	_attemptResume(client, msg, key, cb) {
 		const lcb = cb || (() => {});
 

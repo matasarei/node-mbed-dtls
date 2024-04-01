@@ -1,4 +1,4 @@
-# node-mbed-dtls-server
+# Node MbedTLS server
 
 Node DTLS server wrapping [mbedtls](https://github.com/Mbed-TLS/mbedtls).
 
@@ -6,7 +6,7 @@ Changes made to the fork:
 * Merged changes from a fork, [node-mbed-dtls-modified](https://www.npmjs.com/package/node-mbed-dtls-modified), including Node.js 12 support;
 * Merged changes from a fork, [node-mbed-dtls](https://www.npmjs.com/package/node-mbed-dtls), including N-API migration;
 * Removed the client part of the library, which is now available as a separate package:
-[node-mbed-dtls-client](https://github.com/matasarei/node-mbed-dtls-client).
+[node-mbedtls-client](https://github.com/matasarei/node-mbedtls-client).
 
 ## Setup & Build
 ```bash
