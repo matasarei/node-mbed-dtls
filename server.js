@@ -1,11 +1,11 @@
 'use strict';
 
-var dgram = require('dgram');
-var fs = require('fs');
-var EventEmitter = require('events').EventEmitter;
+const dgram = require('dgram');
+const fs = require('fs');
+const EventEmitter = require('events').EventEmitter;
 
-var DtlsSocket = require('./socket');
-var mbed = require('bindings')('node_mbed_dtls.node');
+const DtlsSocket = require('./socket');
+const mbed = require('bindings')('node_mbed_dtls.node');
 
 const ALERT_CONTENT_TYPE = 21;
 const APPLICATION_DATA_CONTENT_TYPE = 23;
@@ -84,7 +84,7 @@ class DtlsServer extends EventEmitter {
 	}
 
 	getConnections(callback) {
-		var numConnections = Object.keys(this.sockets).filter(skey => {
+		const numConnections = Object.keys(this.sockets).filter(skey => {
 			return this.sockets[skey] && this.sockets[skey].connected;
 		}).length;
 		process.nextTick(() => callback(numConnections));
@@ -117,8 +117,8 @@ class DtlsServer extends EventEmitter {
 				if (rinfo.address === oldRinfo.address && rinfo.port === oldRinfo.port) {
 					// The IP and port have not changed.
 					// The device just thought they might have.
-					// the extra DTLS option has been stripped already, handle the message as normal
-					// like normal using the client we already had.
+					// The extra DTLS option has been stripped already,
+					// handle the message as normal using the client we already had.
 					this._debug(`handleIpChange: ignoring ip change because address did not change ip=${key}, deviceID=${deviceId}`);
 					this._onMessage(msg, rinfo, (client, received) => {
 						// 'received' is true or false based on whether the message is pushed into the stream
@@ -132,7 +132,7 @@ class DtlsServer extends EventEmitter {
 				// The IP and/or port have changed
 				// Attempt to send to oldRinfo which will
 				// a) attempt session resumption (if the client with old address and port doesnt exist yet)
-				// b) attempt to send the message to the old old address and port
+				// b) attempt to send the message to the old address and port
 				this._onMessage(msg, oldRinfo, (client, received) =>
 					new Promise((resolve, reject) => {
 						const oldKey = `${oldRinfo.address}:${oldRinfo.port}`;
@@ -195,8 +195,13 @@ class DtlsServer extends EventEmitter {
 
 	_attemptResume(client, msg, key, cb) {
 		const lcb = cb || (() => {});
-		const called = this.emit('resumeSession', key, client, async (err, session) => {
-			if (!err && session) {
+
+		this._debug('_attemptResume', key, lcb);
+
+		const called = this.emit('resumeSession', key, client, async (session) => {
+			this._debug('resumeSession (callback)', session, cb);
+
+			if (session) {
 				const resumed = client.resumeSession(session);
 				if (resumed) {
 					client.cork();
@@ -244,7 +249,8 @@ class DtlsServer extends EventEmitter {
 
 	_onMessage(msg, rinfo, cb) {
 		const key = `${rinfo.address}:${rinfo.port}`;
-		this._debug(key, msg);
+
+		this._debug('_onMessage', key, msg);
 		// special IP changed content type
 		if (msg.length > 0 && msg[0] === IP_CHANGE_CONTENT_TYPE) {
 			this._debug("IP_CHANGE_CONTENT_TYPE");
@@ -270,6 +276,7 @@ class DtlsServer extends EventEmitter {
 
 		let client = this.sockets[key];
 		if (!client) {
+			this._debug("Unknown client, creating new one", key);
 			this.sockets[key] = client = this._createSocket(rinfo);
 			if ((msg.length > 0 && msg[0] === APPLICATION_DATA_CONTENT_TYPE) || (msg.length === 1 && msg[0] === DUMB_PING_CONTENT_TYPE)) {
 				if (this._attemptResume(client, msg, key, cb)) {
@@ -287,6 +294,7 @@ class DtlsServer extends EventEmitter {
 		}
 
 		if (msg.length === 1 && msg[0] === DUMB_PING_CONTENT_TYPE) {
+			this._debug("DUMB_PING_CONTENT_TYPE");
 			client.emit("dumbPing");
 			if (cb) {
 				cb(client, true);
@@ -295,6 +303,7 @@ class DtlsServer extends EventEmitter {
 		}
 
 		if (cb) {
+			this._debug("Processing new message with a callback...". msg, cb);
 			// we cork because we want the callback to happen
 			// before the implications of the message do
 			client.cork();
@@ -306,23 +315,25 @@ class DtlsServer extends EventEmitter {
 		}
 	}
 
-	_createSocket(rinfo, selfRestored) {
-		var client = new DtlsSocket(this, rinfo.address, rinfo.port);
+	_createSocket(rinfo) {
+		this._debug("_createSocket", rinfo);
+		const client = new DtlsSocket(this, rinfo.address, rinfo.port);
 		client.sendClose = this.options.sendClose;
 		this._attachToSocket(client);
 		return client;
 	}
 
 	_attachToSocket(client) {
+		const key = `${client.remoteAddress}:${client.remotePort}`
+
 		client.once('error', (code, err) => {
-			const key = `${client.remoteAddress}:${client.remotePort}`
 			delete this.sockets[key];
 			if (!client.connected) {
 				this.emit('clientError', err, client);
 			}
 		});
 		client.once('close', () => {
-			const key = `${client.remoteAddress}:${client.remotePort}`
+			this.emit('endSession', key);
 			delete this.sockets[key];
 			client = null;
 			if (this._closing && Object.keys(this.sockets).length === 0) {
@@ -330,7 +341,6 @@ class DtlsServer extends EventEmitter {
 			}
 		});
 		client.once('reconnect', socket => {
-			const key = `${client.remoteAddress}:${client.remotePort}`
 			// treat like a brand-new connection
 			socket.reset();
 			this._attachToSocket(socket);
@@ -338,6 +348,7 @@ class DtlsServer extends EventEmitter {
 		});
 
 		client.once('secureConnect', () => {
+			this.emit('newSession', key, client.session);
 			this.emit('secureConnection', client);
 		});
 

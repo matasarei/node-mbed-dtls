@@ -33,7 +33,7 @@ public:
 	inline mbedtls_ssl_config* config() { return &conf; }
 	DtlsServer(const Napi::CallbackInfo& info);
 	~DtlsServer();
-	char *getPskFromIdentity(char *identity);
+	char *getPskFromIdentity(char *identity, char *sessionId);
 private:
 	static Napi::FunctionReference constructor;
 	mbedtls_ssl_cookie_ctx cookie_ctx;
