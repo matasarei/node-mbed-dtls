@@ -50,10 +50,10 @@ class DtlsSocket extends stream.Duplex {
 	}
 
 	get publicKey() {
-		return (this.mbedSocket && this.mbedSocket.publicKey) || Buffer.from(0);
+		return (this.mbedSocket && this.mbedSocket.publicKey) || Buffer.alloc(0);
 	}
 	get publicKeyPEM() {
-		return (this.mbedSocket && this.mbedSocket.publicKeyPEM) || Buffer.from(0);
+		return (this.mbedSocket && this.mbedSocket.publicKeyPEM) || Buffer.alloc(0);
 	}
 	get outCounter() {
 		return this.mbedSocket && this.mbedSocket.outCounter;
@@ -248,7 +248,15 @@ class DtlsSocket extends stream.Duplex {
 
 		super.end();
 		this.push(null);
-		const noSend = !this._sendClose || (this.mbedSocket && this.mbedSocket.close());
+
+		let noSend = true;
+
+		try {
+			noSend = !this._sendClose || (this.connected && this.mbedSocket.close());
+		} catch (error) {
+			this.emit('error', 0, error.message);
+		}
+
 		this.emit('closing');
 		this.mbedSocket = null;
 		if (this._handshakeLoop) {

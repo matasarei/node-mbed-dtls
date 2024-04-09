@@ -47,15 +47,21 @@ static void my_debug(void *ctx, int level,
 }
 
 int psk_callback(void *parameter, mbedtls_ssl_context *ssl, const unsigned char *psk_identity, size_t identity_len) {
-    char *psk;
-    char *pskIdentity = (char *)malloc(sizeof(char) * (identity_len+1));
-    DtlsServer *dtlsServer = (DtlsServer *)parameter;
-
-    strncpy(pskIdentity,(char*)psk_identity,identity_len);
+    char *pskIdentity = (char *)malloc(sizeof(char) * (identity_len + 1));
+    strncpy(pskIdentity, (char*)psk_identity, identity_len);
     pskIdentity[identity_len]='\0';
 
-    psk = dtlsServer->getPskFromIdentity(pskIdentity);
+    size_t session_id_len = ssl->session_negotiate->id_len;
+    char *sessionId = (char *)malloc(sizeof(char) * (session_id_len + 1));
+    strncpy(sessionId, (char*)ssl->session_negotiate->id, session_id_len);
+
+    DtlsServer *dtlsServer = (DtlsServer *)parameter;
+
+    char *psk;
+    psk = dtlsServer->getPskFromIdentity(pskIdentity, sessionId);
+
     free(pskIdentity);
+    free(sessionId);
 
     if (!psk) {
         return 1;
@@ -137,8 +143,9 @@ DtlsServer::DtlsServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DtlsSe
 	CHECK_MBEDTLS(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen(pers)));
 	CHECK_MBEDTLS(mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_DATAGRAM, MBEDTLS_SSL_PRESET_DEFAULT));
 
-    // @TODO: probably define allowed cipher suites based on provided config
-    // mbedtls_ssl_conf_ciphersuites(&conf, allowed_ciphersuites);
+  // @TODO: probably define allowed cipher suites based on provided config
+  // static int allowed_ciphersuites[] = {MBEDTLS_TLS_PSK_WITH_AES_128_GCM_SHA256, MBEDTLS_TLS_PSK_WITH_AES_128_CBC_SHA256, 0};
+  // mbedtls_ssl_conf_ciphersuites(&conf, allowed_ciphersuites);
 
 	mbedtls_ssl_conf_min_version(&conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 
@@ -152,20 +159,27 @@ DtlsServer::DtlsServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DtlsSe
 	mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
 }
 
-char *DtlsServer::getPskFromIdentity(char *identity) {
+char *DtlsServer::getPskFromIdentity(char *identity, char *sessionId) {
     char *psk = NULL;
 
     if (get_psk != nullptr)
     {
         napi_env env = get_psk.Env();
-        napi_value jsIdentity;
-        napi_create_string_utf8(env, identity, NAPI_AUTO_LENGTH, &jsIdentity);
-
         napi_value global;
         napi_get_global(env, &global);
 
+        napi_value jsIdentity;
+        napi_create_buffer_copy(env, strlen(identity), identity, NULL, &jsIdentity);
+
+        napi_value jsSessionId;
+        napi_create_buffer_copy(env, strlen(sessionId), sessionId, NULL, &jsSessionId);
+
+        napi_value args[2];
+        args[0] = jsIdentity;
+        args[1] = jsSessionId;
+
         napi_value jsPsk;
-        napi_call_function(env, global, get_psk.Value(), 1, &jsIdentity, &jsPsk);
+        napi_call_function(env, global, get_psk.Value(), 2, args, &jsPsk);
 
         size_t pskLen;
         napi_get_value_string_utf8(env, jsPsk, NULL, 0, &pskLen);

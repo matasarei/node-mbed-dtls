@@ -1,3 +1,8 @@
+# 3.1.0
+* Added session events: newSession, endSession;
+* Added the session id argument to the PSK callback;
+* Provided examples for session events;
+
 # 3.0.0
 * Migrated to N-API;
 * DTLS client moved to the separate repository [node-mbed-dtls-client](https://github.com/matasarei/node-mbed-dtls-client);
