@@ -19,10 +19,11 @@ npm i
 ```javascript
 // Key is the only required option. The rest are optional.
 const options = {
-  key:                '...', // Path to the server's private key.
-  identityPskCallback: null, // Callback. PSK resolver, if we're using PSK.
-  handshakeTimeoutMin: 3000, // How many milliseconds can a handshake subtend before being dropped?
-  debug:               0     // How chatty is the library? Larger values generate more log.
+  key:                '...',  // Path to the server's private key.
+  identityPskCallback: null,  // Callback. PSK resolver, if we're using PSK.
+  handshakeTimeoutMin: 3000,  // How many milliseconds can a handshake subtend before being dropped?
+  proxyProtocol:       false, // Whether to use the PROXY protocol.
+  debug:               0      // How chatty is the library? Larger values generate more log.
 };
 
 const dtlsserver = dtls.createServer(opts, socket => {

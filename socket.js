@@ -10,20 +10,20 @@ const MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY = -0x7880;
 const MBEDTLS_ERR_SSL_CLIENT_RECONNECT = -0x6780;
 
 class DtlsSocket extends stream.Duplex {
-	constructor(server, address, port) {
+	constructor(server, clientId, address, port) {
 		super({ allowHalfOpen: false });
 		this.server = server;
 		this.dgramSocket = server.dgramSocket;
 		this.remoteAddress = address;
 		this.remotePort = port;
+		this.clientId = clientId;
 		this._hadError = false;
 		this._sendClose = true;
-		const key = `${address}:${port}`;
 		this._handshakeLoop;
 		this._handshakeLoopTimeout = new Date().getTime();
 
 		try {
-			this.mbedSocket = new mbed.DtlsSocket(server.mbedServer, key,
+			this.mbedSocket = new mbed.DtlsSocket(server.mbedServer, clientId,
 				this._sendEncrypted.bind(this),
 				this._handshakeComplete.bind(this),
 				this._error.bind(this),

@@ -1,0 +1,22 @@
+version: '3'
+services:
+  proxy:
+    image: nginx:latest
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 5684:5684/udp
+    networks:
+      - node-mbed-dtls-test
+
+  node-mbed-dtls:
+    build: ./docker/node
+    volumes:
+      - .:/home/app/src
+    networks:
+      - node-mbed-dtls-test
+
+networks:
+  node-mbed-dtls-test:
+    driver: bridge
+

@@ -109,8 +109,8 @@
 #define MBEDTLS_X509_CRT_PARSE_C
 #define MBEDTLS_X509_CRL_PARSE_C
 
-//#define MBEDTLS_SSL_DEBUG_ALL
-//#define MBEDTLS_DEBUG_C
+#define MBEDTLS_SSL_DEBUG_ALL
+#define MBEDTLS_DEBUG_C
 
 #define MBEDTLS_ERROR_C  //Linker errors without
 

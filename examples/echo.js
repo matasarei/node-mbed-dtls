@@ -42,7 +42,8 @@ const opts = {
   key: path.join(__dirname, '../test/key.pem'),
   identityPskCallback: identityPskCallback,
   debug: 4,
-  handshakeTimeoutMin: 3000
+  handshakeTimeoutMin: 3000,
+  proxyProtocol: true,
 };
 
 const dtlsserver = dtls.createServer(opts, (socket) => {
@@ -98,4 +99,4 @@ dtlsserver.on('endSession', (clientId) => {
   sessions.delete(clientId);
 });
 
-dtlsserver.listen(5684);
+dtlsserver.listen(5683);

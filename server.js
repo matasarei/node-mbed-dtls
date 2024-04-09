@@ -19,6 +19,7 @@ class DtlsServer extends EventEmitter {
 			sendClose: true
 		}, options);
 		this.sockets = {};
+		this.proxyClients = {};
 		this.dgramSocket = dgram.createSocket('udp4');
 		this._onMessage = this._onMessage.bind(this);
 		this.listening = false;
@@ -53,7 +54,7 @@ class DtlsServer extends EventEmitter {
 		this.mbedServer = new mbed.DtlsServer(
 			key,
 			options.identityPskCallback,
-			options.debug ?? 0
+			0//options.debug ?? 0
 		);
 		if (options.handshakeTimeoutMin) {
 			this.mbedServer.handshakeTimeoutMin = options.handshakeTimeoutMin;
@@ -257,8 +258,70 @@ class DtlsServer extends EventEmitter {
 
 	_onMessage(msg, rinfo, cb) {
 		const key = `${rinfo.address}:${rinfo.port}`;
+		let clientId = key;
 
-		this._debug('_onMessage', key, msg);
+		if (this.options.proxyProtocol) {
+			const PROXY_PROTOCOL_SIGNATURE = Buffer.from('50524f5859', 'hex');
+			const PROXY_PROTOCOL_SPECIAL_BYTES = [
+				0x0A, // LF
+				0x0D, // CR
+				0x20  // Space
+			];
+
+			// Check if the message starts with the Proxy Protocol signature
+			if (msg.slice(0, 5).equals(PROXY_PROTOCOL_SIGNATURE)) {
+				this._debug('PROXY protocol V1', rinfo, msg);
+
+				const header = [];
+				let buffer = [];
+				let headerPointer = 0;
+				let stopBytes = 0;
+
+				while (stopBytes < 2 && headerPointer < msg.length) {
+					const byte = msg.readUInt8(headerPointer);
+
+					if (PROXY_PROTOCOL_SPECIAL_BYTES.includes(byte)) {
+						if (byte === 0x0A || byte === 0x0D) {
+							stopBytes++;
+						}
+
+						const buf = Buffer.from(buffer);
+						header.push(buf);
+						buffer = [];
+					} else {
+						buffer.push(byte);
+					}
+
+					headerPointer++;
+				}
+
+				const clientAddress = header[3].toString('ascii');
+				const clientPort = header[4].readUInt16BE(0);
+
+				clientId = `${clientAddress}:${clientPort}`;
+
+				this.proxyClients[key] = clientId;
+
+				// Remove the Proxy Protocol header from the message
+				msg = msg.slice(headerPointer);
+			}
+
+			if (this.proxyClients[key]) {
+				clientId = this.proxyClients[key];
+
+				if (this.sockets[clientId]) {
+					this._debug(`PROXY client address updated`, clientId, this.sockets[clientId].remoteAddress, rinfo.address);
+					this._debug(`PROXY client port updated`, clientId, this.sockets[clientId].remotePort, rinfo.port);
+
+					this.sockets[clientId].remotePort = rinfo.port;
+					this.sockets[clientId].remoteAddress = rinfo.address;
+				}
+
+				this._debug(`PROXY client: ${key} => ${clientId}`);
+			}
+		}
+
+		this._debug('_onMessage', clientId, msg);
 		// special IP changed content type
 		if (msg.length > 0 && msg[0] === IP_CHANGE_CONTENT_TYPE) {
 			this._debug("IP_CHANGE_CONTENT_TYPE");
@@ -276,28 +339,29 @@ class DtlsServer extends EventEmitter {
 				msg = msg.slice(0, idStartIndex);
 				msg[0] = APPLICATION_DATA_CONTENT_TYPE;
 			}
-			this._debug(`received ip change ip=${key}, deviceID=${deviceId}`);
-			if (this._handleIpChange(msg, key, rinfo, deviceId)) {
+			this._debug(`received ip change ip=${clientId}, deviceID=${deviceId}`);
+			if (this._handleIpChange(msg, clientId, rinfo, deviceId)) {
 				return;
 			}
 		}
 
-		let client = this.sockets[key];
+		let client = this.sockets[clientId];
 		if (!client) {
-			this._debug("Unknown client, creating new one", key);
-			this.sockets[key] = client = this._createSocket(rinfo);
+			this._debug("Unknown client, creating new one", clientId);
+			this.sockets[clientId] = client = this._createSocket(clientId, rinfo.address, rinfo.port);
 			if ((msg.length > 0 && msg[0] === APPLICATION_DATA_CONTENT_TYPE) || (msg.length === 1 && msg[0] === DUMB_PING_CONTENT_TYPE)) {
-				if (this._attemptResume(client, msg, key, cb)) {
+				if (this._attemptResume(client, msg, clientId, cb)) {
 					return;
 				}
 			}
 		}
 
 		if (msg.length > 0 && msg[0] === ALERT_CONTENT_TYPE) {
-			this._debug("ALERT_CONTENT_TYPE", key);
+			this._debug("ALERT_CONTENT_TYPE", clientId);
 			if(client) {
 				client.end();
-				delete this.sockets[key];
+				delete this.sockets[clientId];
+				delete this.proxyClients[key];
 			}
 		}
 
@@ -321,28 +385,32 @@ class DtlsServer extends EventEmitter {
 		} else {
 			client.receive(msg);
 		}
+
+		Object.keys(this.sockets).forEach(key => {
+			this._debug('Connected client: ', key, this.sockets[key].remoteAddress, this.sockets[key].remotePort);
+		});
 	}
 
-	_createSocket(rinfo) {
-		this._debug("_createSocket", rinfo);
-		const client = new DtlsSocket(this, rinfo.address, rinfo.port);
+	_createSocket(clientId, address, port) {
+		this._debug("_createSocket", clientId, address, port);
+		const client = new DtlsSocket(this, clientId, address, port);
 		client.sendClose = this.options.sendClose;
 		this._attachToSocket(client);
 		return client;
 	}
 
 	_attachToSocket(client) {
-		const key = `${client.remoteAddress}:${client.remotePort}`
+		const clientId = client.clientId;
 
 		client.once('error', (code, err) => {
-			delete this.sockets[key];
+			delete this.sockets[clientId];
 			if (!client.connected) {
 				this.emit('clientError', err, client);
 			}
 		});
 		client.once('close', () => {
-			this.emit('endSession', key);
-			delete this.sockets[key];
+			this.emit('endSession', clientId);
+			delete this.sockets[clientId];
 			client = null;
 			if (this._closing && Object.keys(this.sockets).length === 0) {
 				this._closeSocket();
@@ -352,11 +420,11 @@ class DtlsServer extends EventEmitter {
 			// treat like a brand-new connection
 			socket.reset();
 			this._attachToSocket(socket);
-			this.sockets[key] = socket;
+			this.sockets[clientId] = socket;
 		});
 
 		client.once('secureConnect', () => {
-			this.emit('newSession', key, client.session);
+			this.emit('newSession', clientId, client.session);
 			this.emit('secureConnection', client);
 		});
 
