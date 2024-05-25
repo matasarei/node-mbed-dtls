@@ -1,5 +1,5 @@
 {
-  "name": "node-mbed-dtls-server",
+  "name": "node-mbedtls-server",
   "version": "3.1.1",
   "description": "DTLS server wrapping MbedTLS",
   "main": "index.js",
@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/matasarei/node-mbed-dtls-server.git"
+    "url": "https://github.com/matasarei/node-mbedtls-server.git"
   },
   "devDependencies": {
     "mocha": "^10.3.0",
